@@ -27,11 +27,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	conn.Write(byteEncodeString("PONG"))
+	buffer := make([]byte, 1024)
+
+	for {
+		_, err =	conn.Read(buffer)
+		if err != nil {
+			break
+		}
+
+		conn.Write(byteEncodeString("PONG"))
+	}
+	
+
 
 
 }
 
 func byteEncodeString(input string) []byte {
-	return []byte(fmt.Sprintf("+%s\r\n", input))
+	return fmt.Appendf(nil, "+%s\r\n", input)
+}
+
+func byteDecodeString(input []byte) string {
+	return string(input)
 }
