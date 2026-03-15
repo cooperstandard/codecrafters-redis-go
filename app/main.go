@@ -4,7 +4,11 @@ import (
 	"fmt"
 	"net"
 	"os"
+
+	"github.com/codecrafters-io/redis-starter-go/internal/parser"
 )
+
+const BufferSize int = 1024
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -31,24 +35,19 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-	var err error = nil
+	defer func() {
+		conn.Close()
+	}()
 
-	buffer := make([]byte, 1024)
+	buffer := make([]byte, BufferSize)
 
 	for {
-		_, err = conn.Read(buffer)
+		n, err := conn.Read(buffer)
 		if err != nil {
 			break
 		}
-
-		conn.Write(byteEncodeString("PONG"))
+		cmd := buffer[:n]
+		command, args := parser.ParseString(cmd)
+		command.Callback(args, conn)
 	}
-}
-
-func byteEncodeString(input string) []byte {
-	return fmt.Appendf(nil, "+%s\r\n", input)
-}
-
-func byteDecodeString(input []byte) string {
-	return string(input)
 }
