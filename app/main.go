@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"sync"
 
 	"github.com/codecrafters-io/redis-starter-go/internal/parser"
 )
@@ -22,6 +23,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	var config parser.Config
+	config.Mux = &sync.RWMutex{}
+	config.Storage = make(map[string]string)
+
 	for {
 
 		conn, err := l.Accept()
@@ -30,11 +35,11 @@ func main() {
 			os.Exit(1)
 		}
 
-		go handleConnection(conn)
+		go handleConnection(conn, config)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, config parser.Config) {
 	defer func() {
 		conn.Close()
 	}()
@@ -48,6 +53,6 @@ func handleConnection(conn net.Conn) {
 		}
 		cmd := buffer[:n]
 		command, args := parser.ParseString(cmd)
-		command.Callback(args, conn)
+		command.Callback(args, conn, config)
 	}
 }
