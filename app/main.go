@@ -25,7 +25,7 @@ func main() {
 
 	var config parser.Config
 	config.Mux = &sync.RWMutex{}
-	config.Storage = make(map[string]string)
+	config.Storage = make(map[string]parser.Object)
 
 	for {
 

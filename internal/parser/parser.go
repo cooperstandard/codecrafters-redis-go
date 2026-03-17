@@ -3,15 +3,21 @@ package parser
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
-type Config struct {
-	Mux *sync.RWMutex
-	Storage map[string]string
+type Object struct {
+	ExpiresAt time.Time
+	Value     string
 }
 
+type Config struct {
+	Mux     *sync.RWMutex
+	Storage map[string]Object
+}
 
 func ByteEncodeString(input string) []byte {
 	return fmt.Appendf(nil, "+%s\r\n", input)
@@ -44,13 +50,12 @@ var Commands = map[string]Command{
 		Callback: echoCommand,
 	},
 	"set": {
-		Command: "set",
+		Command:  "set",
 		Callback: setCommand,
 	},
 	"get": {
-		Command: "get",
+		Command:  "get",
 		Callback: getCommand,
-
 	},
 }
 
@@ -75,9 +80,23 @@ func PingCommand(_args []string, conn net.Conn, _config Config) error {
 }
 
 func setCommand(args []string, conn net.Conn, config Config) error {
+	expiresAt := time.Time{}
+	if len(args) >= 10 {
+		dur, err := strconv.Atoi(args[10])
+		if err != nil {
+			return err
+		}
+		if args[8] == "EX" {
+			expiresAt = time.Now().Add(time.Second * time.Duration(dur))
+		} else {
+			expiresAt = time.Now().Add(time.Millisecond * time.Duration(dur))
+		}
+	}
+
 	config.Mux.Lock()
-	config.Storage[args[4]] = args[6]
+	config.Storage[args[4]] = Object{Value: args[6], ExpiresAt: expiresAt}
 	config.Mux.Unlock()
+
 	WriteSimpleString(conn, "OK")
 	return nil
 }
@@ -87,12 +106,21 @@ func getCommand(args []string, conn net.Conn, config Config) error {
 	config.Mux.RLock()
 	val, exists := config.Storage[args[4]]
 	config.Mux.RUnlock()
+
+	// remove value if expired
+	if exists && !val.ExpiresAt.IsZero() && time.Now().After(val.ExpiresAt) {
+		exists = false
+		config.Mux.Lock()
+		delete(config.Storage, args[4])
+		config.Mux.Unlock()
+	}
+
 	if !exists {
 		WriteBulkString(conn, "")
 		return nil
-	} 
+	}
 
-	WriteBulkString(conn, val)
+	WriteBulkString(conn, val.Value)
 	return nil
 }
 
