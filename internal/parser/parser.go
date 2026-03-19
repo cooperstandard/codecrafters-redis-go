@@ -76,8 +76,12 @@ var Commands = map[string]Command{
 		Callback: getCommand,
 	},
 	"rpush": {
-		Command: "rpush",
+		Command:  "rpush",
 		Callback: rpushCommand,
+	},
+	"lrange": {
+		Command:  "lrange",
+		Callback: lrangeCommand,
 	},
 }
 
@@ -93,6 +97,27 @@ func nullCommand(_args []string, _conn net.Conn, _config Config) error {
 
 func echoCommand(args []string, conn net.Conn, _config Config) error {
 	WriteBulkString(conn, args[4])
+	return nil
+}
+
+func lrangeCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+	list := config.Lists[args[0]]
+	start, err := strconv.Atoi(args[1])
+	if err != nil {
+		WriteStringArray(conn, []string{})
+		return err
+	}
+	end, _ := strconv.Atoi(args[2])
+
+	end = min(end, len(list)-1)
+
+	if start > end {
+		WriteStringArray(conn, []string{})
+		return nil
+	}
+
+	WriteStringArray(conn, list[start:end+1])
 	return nil
 }
 
@@ -165,4 +190,13 @@ func WriteBulkString(conn net.Conn, val string) {
 
 func WriteInteger(conn net.Conn, val int) {
 	fmt.Fprintf(conn, ":%d\r\n", val)
+}
+
+func WriteStringArray(conn net.Conn, list []string) { 
+	str := fmt.Sprintf("*%d\r\n", len(list))
+	for _, v := range list {
+		str += fmt.Sprintf("$%d\r\n%s\r\n", len(v), v)
+	}
+	fmt.Println(str)
+	fmt.Fprintf(conn, str)
 }
