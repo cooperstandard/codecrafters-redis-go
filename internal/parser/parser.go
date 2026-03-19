@@ -102,7 +102,6 @@ func echoCommand(args []string, conn net.Conn, _config Config) error {
 
 func lrangeCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
-	list := config.Lists[args[0]]
 	start, err := strconv.Atoi(args[1])
 	if err != nil {
 		WriteStringArray(conn, []string{})
@@ -110,12 +109,16 @@ func lrangeCommand(args []string, conn net.Conn, config Config) error {
 	}
 	end, _ := strconv.Atoi(args[2])
 
+	config.Mux.RLock()
+	list := config.Lists[args[0]]
+
 	end = min(end, len(list)-1)
 
 	if start > end {
 		WriteStringArray(conn, []string{})
 		return nil
 	}
+	config.Mux.RUnlock()
 
 	WriteStringArray(conn, list[start:end+1])
 	return nil
@@ -123,9 +126,11 @@ func lrangeCommand(args []string, conn net.Conn, config Config) error {
 
 func rpushCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
-
+	
+	config.Mux.Lock()
 	config.Lists[args[0]] = append(config.Lists[args[0]], args[1:]...)
 	WriteInteger(conn, len(config.Lists[args[0]]))
+	config.Mux.Unlock()
 
 	return nil
 }
@@ -158,6 +163,7 @@ func setCommand(args []string, conn net.Conn, config Config) error {
 }
 
 func getCommand(args []string, conn net.Conn, config Config) error {
+	// TODO: update all the callbacks that use args to call this helper
 	fmt.Println(args)
 	config.Mux.RLock()
 	val, exists := config.Storage[args[4]]
@@ -197,6 +203,5 @@ func WriteStringArray(conn net.Conn, list []string) {
 	for _, v := range list {
 		str += fmt.Sprintf("$%d\r\n%s\r\n", len(v), v)
 	}
-	fmt.Println(str)
 	fmt.Fprintf(conn, str)
 }
