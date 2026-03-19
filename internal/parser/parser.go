@@ -17,6 +17,15 @@ type Object struct {
 type Config struct {
 	Mux     *sync.RWMutex
 	Storage map[string]Object
+	Lists   map[string][]string
+}
+
+func InitConfig() Config {
+	var config Config
+	config.Mux = &sync.RWMutex{}
+	config.Storage = make(map[string]Object)
+	config.Lists = make(map[string][]string)
+	return config
 }
 
 func ByteEncodeString(input string) []byte {
@@ -34,6 +43,15 @@ func ByteDecodeString(input []byte) string {
 type Command struct {
 	Command  string
 	Callback func([]string, net.Conn, Config) error
+}
+
+func GetArgs(raw []string) []string {
+	var ret []string
+
+	for i := 4; i < len(raw); i += 2 {
+		ret = append(ret, raw[i])
+	}
+	return ret
 }
 
 var Commands = map[string]Command{
@@ -57,6 +75,10 @@ var Commands = map[string]Command{
 		Command:  "get",
 		Callback: getCommand,
 	},
+	"rpush": {
+		Command: "rpush",
+		Callback: rpushCommand,
+	},
 }
 
 func ParseString(cmd []byte) (Command, []string) {
@@ -71,6 +93,15 @@ func nullCommand(_args []string, _conn net.Conn, _config Config) error {
 
 func echoCommand(args []string, conn net.Conn, _config Config) error {
 	WriteBulkString(conn, args[4])
+	return nil
+}
+
+func rpushCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+
+	config.Lists[args[0]] = append(config.Lists[args[0]], args[1])
+	WriteInteger(conn, len(config.Lists[args[0]]))
+
 	return nil
 }
 
@@ -130,4 +161,8 @@ func WriteBulkString(conn net.Conn, val string) {
 		return
 	}
 	fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(val), val)
+}
+
+func WriteInteger(conn net.Conn, val int) {
+	fmt.Fprintf(conn, ":%d\r\n", val)
 }
