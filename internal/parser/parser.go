@@ -99,7 +99,7 @@ func echoCommand(args []string, conn net.Conn, _config Config) error {
 func rpushCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
 
-	config.Lists[args[0]] = append(config.Lists[args[0]], args[1])
+	config.Lists[args[0]] = append(config.Lists[args[0]], args[1:]...)
 	WriteInteger(conn, len(config.Lists[args[0]]))
 
 	return nil
