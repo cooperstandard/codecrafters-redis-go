@@ -88,6 +88,10 @@ var Commands = map[string]Command{
 		Command: "lpush",
 		Callback: lpushCommand,
 	},
+	"llen": {
+		Command: "llen",
+		Callback: llenCommand,
+	},
 }
 
 func ParseString(cmd []byte) (Command, []string) {
@@ -102,6 +106,17 @@ func nullCommand(_args []string, _conn net.Conn, _config Config) error {
 
 func echoCommand(args []string, conn net.Conn, _config Config) error {
 	WriteBulkString(conn, args[4])
+	return nil
+}
+
+func llenCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+	fmt.Println(args)
+
+	config.Mux.RLock()
+	WriteInteger(conn, len(config.Lists[args[0]]))
+	config.Mux.RUnlock()
+
 	return nil
 }
 
