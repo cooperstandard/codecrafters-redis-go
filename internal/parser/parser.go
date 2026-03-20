@@ -92,6 +92,10 @@ var Commands = map[string]Command{
 		Command: "llen",
 		Callback: llenCommand,
 	},
+	"lpop": {
+		Command: "lpop",
+		Callback: lpopCommand,
+	},
 }
 
 func ParseString(cmd []byte) (Command, []string) {
@@ -106,6 +110,23 @@ func nullCommand(_args []string, _conn net.Conn, _config Config) error {
 
 func echoCommand(args []string, conn net.Conn, _config Config) error {
 	WriteBulkString(conn, args[4])
+	return nil
+}
+
+func lpopCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+
+	config.Mux.Lock()
+	if len(config.Lists[args[0]]) == 0 {
+		WriteBulkString(conn, "")
+	} else {
+		item := config.Lists[args[0]][0]
+		config.Lists[args[0]] = config.Lists[args[0]][1:]	
+		WriteBulkString(conn, item)
+	}
+	config.Mux.Unlock()
+
+
 	return nil
 }
 
@@ -147,6 +168,7 @@ func lrangeCommand(args []string, conn net.Conn, config Config) error {
 
 	if start > end {
 		WriteStringArray(conn, []string{})
+		config.Mux.RUnlock()
 		return nil
 	}
 
