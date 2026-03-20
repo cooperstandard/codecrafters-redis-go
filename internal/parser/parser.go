@@ -107,20 +107,31 @@ func lrangeCommand(args []string, conn net.Conn, config Config) error {
 		WriteStringArray(conn, []string{})
 		return err
 	}
+
 	end, _ := strconv.Atoi(args[2])
 
 	config.Mux.RLock()
 	list := config.Lists[args[0]]
 
+	if start < 0 {
+		start = len(list) + start
+		start = max(start, 0)
+	}
+
 	end = min(end, len(list)-1)
+
+	if end < 0 {
+		end = len(list) + end
+		start = max(start, 0)
+	}
 
 	if start > end {
 		WriteStringArray(conn, []string{})
 		return nil
 	}
-	config.Mux.RUnlock()
 
 	WriteStringArray(conn, list[start:end+1])
+	config.Mux.RUnlock()
 	return nil
 }
 
