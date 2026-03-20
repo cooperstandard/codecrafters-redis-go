@@ -85,15 +85,15 @@ var Commands = map[string]Command{
 		Callback: lrangeCommand,
 	},
 	"lpush": {
-		Command: "lpush",
+		Command:  "lpush",
 		Callback: lpushCommand,
 	},
 	"llen": {
-		Command: "llen",
+		Command:  "llen",
 		Callback: llenCommand,
 	},
 	"lpop": {
-		Command: "lpop",
+		Command:  "lpop",
 		Callback: lpopCommand,
 	},
 }
@@ -116,16 +116,30 @@ func echoCommand(args []string, conn net.Conn, _config Config) error {
 func lpopCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
 
-	config.Mux.Lock()
-	if len(config.Lists[args[0]]) == 0 {
-		WriteBulkString(conn, "")
-	} else {
-		item := config.Lists[args[0]][0]
-		config.Lists[args[0]] = config.Lists[args[0]][1:]	
-		WriteBulkString(conn, item)
-	}
-	config.Mux.Unlock()
+	if len(args) == 1 {
 
+		config.Mux.Lock()
+		if len(config.Lists[args[0]]) == 0 {
+			WriteBulkString(conn, "")
+		} else {
+			item := config.Lists[args[0]][0]
+			config.Lists[args[0]] = config.Lists[args[0]][1:]
+			WriteBulkString(conn, item)
+		}
+		config.Mux.Unlock()
+	} else {
+		config.Mux.Lock()
+		if len(config.Lists[args[0]]) == 0 {
+			WriteBulkString(conn, "")
+		} else {
+			pivot, _ := strconv.Atoi(args[1])
+			pivot = min(len(config.Lists[args[0]])-1, pivot)
+			items := config.Lists[args[0]][:pivot]
+			config.Lists[args[0]] = config.Lists[args[0]][pivot:]
+			WriteStringArray(conn, items)
+		}
+		config.Mux.Unlock()
+	}
 
 	return nil
 }
@@ -192,7 +206,7 @@ func lpushCommand(args []string, conn net.Conn, config Config) error {
 
 func rpushCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
-	
+
 	config.Mux.Lock()
 	config.Lists[args[0]] = append(config.Lists[args[0]], args[1:]...)
 	WriteInteger(conn, len(config.Lists[args[0]]))
@@ -264,7 +278,7 @@ func WriteInteger(conn net.Conn, val int) {
 	fmt.Fprintf(conn, ":%d\r\n", val)
 }
 
-func WriteStringArray(conn net.Conn, list []string) { 
+func WriteStringArray(conn net.Conn, list []string) {
 	str := fmt.Sprintf("*%d\r\n", len(list))
 	for _, v := range list {
 		str += fmt.Sprintf("$%d\r\n%s\r\n", len(v), v)
