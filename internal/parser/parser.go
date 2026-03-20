@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -83,6 +84,10 @@ var Commands = map[string]Command{
 		Command:  "lrange",
 		Callback: lrangeCommand,
 	},
+	"lpush": {
+		Command: "lpush",
+		Callback: lpushCommand,
+	},
 }
 
 func ParseString(cmd []byte) (Command, []string) {
@@ -132,6 +137,19 @@ func lrangeCommand(args []string, conn net.Conn, config Config) error {
 
 	WriteStringArray(conn, list[start:end+1])
 	config.Mux.RUnlock()
+	return nil
+}
+
+func lpushCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+
+	config.Mux.Lock()
+	elems := args[1:]
+	slices.Reverse(elems)
+	config.Lists[args[0]] = append(elems, config.Lists[args[0]]...)
+	WriteInteger(conn, len(config.Lists[args[0]]))
+	config.Mux.Unlock()
+
 	return nil
 }
 
