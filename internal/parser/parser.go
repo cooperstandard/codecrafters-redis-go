@@ -96,6 +96,10 @@ var Commands = map[string]Command{
 		Command:  "lpop",
 		Callback: lpopCommand,
 	},
+	"blpop": {
+		Command: "blpop",
+		Callback: blpopCommand,
+	},
 }
 
 func ParseString(cmd []byte) (Command, []string) {
@@ -110,6 +114,56 @@ func nullCommand(_args []string, _conn net.Conn, _config Config) error {
 
 func echoCommand(args []string, conn net.Conn, _config Config) error {
 	WriteBulkString(conn, args[4])
+	return nil
+}
+
+func blpopCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+
+	if len(args) < 2 {
+		WriteEmptyArray(conn)
+		return nil
+	}
+
+	tryPop := func() bool {
+		fmt.Println(config.Lists[args[0]])
+
+		// NOTE: this is inefficient use of locks but in reality 90% of the time any go routine is waiting will be sleeping, not waiting for the lock
+		config.Mux.Lock()
+		defer config.Mux.Unlock()
+		if len(config.Lists[args[0]]) > 0 {
+			items := []string{args[0], config.Lists[args[0]][:1][0]}
+			config.Lists[args[0]] = config.Lists[args[0]][1:]
+			WriteStringArray(conn, items)
+			return true
+		}
+		return false
+	}
+
+	if tryPop() {
+		return nil
+	}
+
+	if args[1] == "0" {
+		for {
+			time.Sleep(time.Millisecond * 10)
+			if tryPop() {
+				return nil
+			}
+		}
+	}
+
+	timeoutSeconds, _ := strconv.ParseFloat(args[1], 64)
+
+	deadline := time.Now().Add(time.Duration(timeoutSeconds * float64(time.Second)))
+	for time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+		if tryPop() {
+			return nil
+		}
+	}
+
+	WriteEmptyArray(conn)
 	return nil
 }
 
@@ -279,9 +333,18 @@ func WriteInteger(conn net.Conn, val int) {
 }
 
 func WriteStringArray(conn net.Conn, list []string) {
+	fmt.Fprintf(conn, CreateStringArray(list))
+}
+
+func CreateStringArray(list []string) string {
 	str := fmt.Sprintf("*%d\r\n", len(list))
 	for _, v := range list {
 		str += fmt.Sprintf("$%d\r\n%s\r\n", len(v), v)
 	}
-	fmt.Fprintf(conn, str)
+	return str
 }
+
+func WriteEmptyArray(conn net.Conn) {
+	fmt.Fprintf(conn, "*-1\r\n")
+}
+
