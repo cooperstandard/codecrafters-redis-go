@@ -6,28 +6,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
-
-type Object struct {
-	ExpiresAt time.Time
-	Value     string
-}
-
-type Config struct {
-	Mux     *sync.RWMutex
-	Storage map[string]Object
-	Lists   map[string][]string
-}
-
-func InitConfig() Config {
-	var config Config
-	config.Mux = &sync.RWMutex{}
-	config.Storage = make(map[string]Object)
-	config.Lists = make(map[string][]string)
-	return config
-}
 
 func ByteEncodeString(input string) []byte {
 	return fmt.Appendf(nil, "+%s\r\n", input)
@@ -97,8 +77,12 @@ var Commands = map[string]Command{
 		Callback: lpopCommand,
 	},
 	"blpop": {
-		Command: "blpop",
+		Command:  "blpop",
 		Callback: blpopCommand,
+	},
+	"type": {
+		Command: "type",
+		Callback: typeCommand,
 	},
 }
 
@@ -117,6 +101,17 @@ func echoCommand(args []string, conn net.Conn, _config Config) error {
 	return nil
 }
 
+func typeCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+	if config.Storage[args[0]].Value == "" {
+		WriteSimpleString(conn, "none")
+		return nil
+	}
+	WriteSimpleString(conn, "string")
+	
+	return nil
+}
+
 func blpopCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
 
@@ -126,8 +121,6 @@ func blpopCommand(args []string, conn net.Conn, config Config) error {
 	}
 
 	tryPop := func() bool {
-		fmt.Println(config.Lists[args[0]])
-
 		// NOTE: this is inefficient use of locks but in reality 90% of the time any go routine is waiting will be sleeping, not waiting for the lock
 		config.Mux.Lock()
 		defer config.Mux.Unlock()
@@ -289,7 +282,7 @@ func setCommand(args []string, conn net.Conn, config Config) error {
 	}
 
 	config.Mux.Lock()
-	config.Storage[args[4]] = Object{Value: args[6], ExpiresAt: expiresAt}
+	config.Storage[args[4]] = object{Value: args[6], ExpiresAt: expiresAt}
 	config.Mux.Unlock()
 
 	WriteSimpleString(conn, "OK")
@@ -347,4 +340,3 @@ func CreateStringArray(list []string) string {
 func WriteEmptyArray(conn net.Conn) {
 	fmt.Fprintf(conn, "*-1\r\n")
 }
-
