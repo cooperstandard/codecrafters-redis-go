@@ -5,25 +5,11 @@ import (
 	"net"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 )
 
-func ByteEncodeString(input string) []byte {
-	return fmt.Appendf(nil, "+%s\r\n", input)
-}
-
 func WriteSimpleString(conn net.Conn, val string) {
 	fmt.Fprintf(conn, "+%s\r\n", val)
-}
-
-func ByteDecodeString(input []byte) string {
-	return string(input)
-}
-
-type Command struct {
-	Command  string
-	Callback func([]string, net.Conn, Config) error
 }
 
 func GetArgs(raw []string) []string {
@@ -33,63 +19,6 @@ func GetArgs(raw []string) []string {
 		ret = append(ret, raw[i])
 	}
 	return ret
-}
-
-var Commands = map[string]Command{
-	"ping": {
-		Command:  "ping",
-		Callback: PingCommand,
-	},
-	"null": {
-		Command:  "",
-		Callback: nullCommand,
-	},
-	"echo": {
-		Command:  "echo",
-		Callback: echoCommand,
-	},
-	"set": {
-		Command:  "set",
-		Callback: setCommand,
-	},
-	"get": {
-		Command:  "get",
-		Callback: getCommand,
-	},
-	"rpush": {
-		Command:  "rpush",
-		Callback: rpushCommand,
-	},
-	"lrange": {
-		Command:  "lrange",
-		Callback: lrangeCommand,
-	},
-	"lpush": {
-		Command:  "lpush",
-		Callback: lpushCommand,
-	},
-	"llen": {
-		Command:  "llen",
-		Callback: llenCommand,
-	},
-	"lpop": {
-		Command:  "lpop",
-		Callback: lpopCommand,
-	},
-	"blpop": {
-		Command:  "blpop",
-		Callback: blpopCommand,
-	},
-	"type": {
-		Command: "type",
-		Callback: typeCommand,
-	},
-}
-
-func ParseString(cmd []byte) (Command, []string) {
-	str := strings.Split(string(cmd), "\r\n")
-
-	return Commands[strings.ToLower(str[2])], str
 }
 
 func nullCommand(_args []string, _conn net.Conn, _config Config) error {
@@ -103,12 +32,20 @@ func echoCommand(args []string, conn net.Conn, _config Config) error {
 
 func typeCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
-	if config.Storage[args[0]].Value == "" {
-		WriteSimpleString(conn, "none")
+	if _, ok := config.Storage[args[0]]; ok {
+		WriteSimpleString(conn, "string")
 		return nil
 	}
-	WriteSimpleString(conn, "string")
-	
+	if _, ok := config.Lists[args[0]]; ok {
+		WriteSimpleString(conn, "list")
+		return nil
+	}
+	if _, ok := config.Streams[args[0]]; ok {
+		WriteSimpleString(conn, "stream")
+		return nil
+	}
+
+	WriteSimpleString(conn, "none")
 	return nil
 }
 
@@ -191,9 +128,25 @@ func lpopCommand(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
+
+func xaddCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+	config.Mux.Lock()
+	streamEntry := stream{ID: args[1]}
+	streamEntry.data = make(map[string]string)
+	for i := 2; i < len(args); i += 2 {
+		streamEntry.data[args[i]] = args[i+1]
+	}
+	config.Streams[args[0]] =	append(config.Streams[args[0]], streamEntry)
+	config.Mux.Unlock()
+
+	WriteBulkString(conn, args[1])
+
+	return nil
+}
+
 func llenCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
-	fmt.Println(args)
 
 	config.Mux.RLock()
 	WriteInteger(conn, len(config.Lists[args[0]]))
