@@ -5,12 +5,9 @@ import (
 	"net"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 )
-
-func WriteSimpleString(conn net.Conn, val string) {
-	fmt.Fprintf(conn, "+%s\r\n", val)
-}
 
 func GetArgs(raw []string) []string {
 	var ret []string
@@ -128,16 +125,35 @@ func lpopCommand(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
-
 func xaddCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
+
+	config.Mux.RLock()
+	if strings.Compare(args[1], "0-0") <= 0 {
+		errorMessage := "The ID specified in XADD must be greater than 0-0"
+		WriteSimpleError(conn, errorMessage)
+		config.Mux.RUnlock()
+		return nil
+	}
+	if s, exists := config.Streams[args[0]]; exists {
+		errorMessage := "The ID specified in XADD is equal or smaller than the target stream top item"
+		if len(s) != 0 {
+			if strings.Compare(args[1], s[len(s)-1].ID) <= 0 {
+				WriteSimpleError(conn, errorMessage)
+				config.Mux.RUnlock()
+				return nil
+			}
+		}
+	}
+	config.Mux.RUnlock()
+
 	config.Mux.Lock()
 	streamEntry := stream{ID: args[1]}
 	streamEntry.data = make(map[string]string)
 	for i := 2; i < len(args); i += 2 {
 		streamEntry.data[args[i]] = args[i+1]
 	}
-	config.Streams[args[0]] =	append(config.Streams[args[0]], streamEntry)
+	config.Streams[args[0]] = append(config.Streams[args[0]], streamEntry)
 	config.Mux.Unlock()
 
 	WriteBulkString(conn, args[1])
@@ -264,32 +280,4 @@ func getCommand(args []string, conn net.Conn, config Config) error {
 
 	WriteBulkString(conn, val.Value)
 	return nil
-}
-
-func WriteBulkString(conn net.Conn, val string) {
-	if len(val) == 0 {
-		fmt.Fprintf(conn, "$-1\r\n")
-		return
-	}
-	fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(val), val)
-}
-
-func WriteInteger(conn net.Conn, val int) {
-	fmt.Fprintf(conn, ":%d\r\n", val)
-}
-
-func WriteStringArray(conn net.Conn, list []string) {
-	fmt.Fprintf(conn, CreateStringArray(list))
-}
-
-func CreateStringArray(list []string) string {
-	str := fmt.Sprintf("*%d\r\n", len(list))
-	for _, v := range list {
-		str += fmt.Sprintf("$%d\r\n%s\r\n", len(v), v)
-	}
-	return str
-}
-
-func WriteEmptyArray(conn net.Conn) {
-	fmt.Fprintf(conn, "*-1\r\n")
 }
