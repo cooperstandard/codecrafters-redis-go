@@ -4,6 +4,9 @@ import (
 	"cmp"
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func Last[S ~[]E, E cmp.Ordered](x S) E {
@@ -47,4 +50,53 @@ func WriteEmptyArray(conn net.Conn) {
 
 func WriteSimpleError(conn net.Conn, msg string) {
 	fmt.Fprintf(conn, "-ERR %s\r\n", msg)
+}
+
+func validateAndGenerateID(conn net.Conn, config Config, id string, streamName string) (string, bool) {
+	config.Mux.RLock()
+	defer config.Mux.RUnlock()
+	if strings.Compare(id, "0-0") <= 0 && id[len(id)-1] != '*' {
+		errorMessage := "The ID specified in XADD must be greater than 0-0"
+		WriteSimpleError(conn, errorMessage)
+		return "", false
+	}
+	// this is wrong, I should be searching through the whole list for the latest (if exists) entry with a matching timestamp
+	if s, exists := config.Streams[streamName]; exists {
+		errorMessage := "The ID specified in XADD is equal or smaller than the target stream top item"
+		if len(s) != 0 {
+			if strings.Compare(id, s[len(s)-1].ID) <= 0 && id[len(id)-1] != '*' {
+				WriteSimpleError(conn, errorMessage)
+				return "", false
+			}
+		}
+	}
+
+	parts := strings.Split(id, "-")
+	now := strconv.Itoa(int(time.Now().UnixMilli()))
+	if parts[0] == "*" {
+		parts[0] = now
+		parts = append(parts, "")
+	} else if parts[1] != "*" {
+		return id, true
+	}
+	if s, exists := config.Streams[streamName]; exists {
+
+		if strings.Split(s[len(s)-1].ID, "-")[0] == parts[0] {
+			ordinal, _ := strconv.Atoi(strings.Split(s[len(s)-1].ID, "-")[1])
+			ordinal += 1
+			parts[1] = strconv.Itoa(ordinal)
+		} else {
+			parts[1] = "0"
+			if parts[0] == "0" {
+				parts[1] = "1"
+			}
+		}
+	} else {
+		parts[1] = "0"
+		if parts[0] == "0" {
+			parts[1] = "1"
+		}
+	}
+
+	return fmt.Sprintf("%s-%s", parts[0], parts[1]), true
 }

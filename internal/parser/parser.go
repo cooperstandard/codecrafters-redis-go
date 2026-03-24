@@ -5,7 +5,6 @@ import (
 	"net"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -128,24 +127,11 @@ func lpopCommand(args []string, conn net.Conn, config Config) error {
 func xaddCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
 
-	config.Mux.RLock()
-	if strings.Compare(args[1], "0-0") <= 0 {
-		errorMessage := "The ID specified in XADD must be greater than 0-0"
-		WriteSimpleError(conn, errorMessage)
-		config.Mux.RUnlock()
+	var ok bool
+	args[1], ok = validateAndGenerateID(conn, config, args[1], args[0])
+	if !ok {
 		return nil
 	}
-	if s, exists := config.Streams[args[0]]; exists {
-		errorMessage := "The ID specified in XADD is equal or smaller than the target stream top item"
-		if len(s) != 0 {
-			if strings.Compare(args[1], s[len(s)-1].ID) <= 0 {
-				WriteSimpleError(conn, errorMessage)
-				config.Mux.RUnlock()
-				return nil
-			}
-		}
-	}
-	config.Mux.RUnlock()
 
 	config.Mux.Lock()
 	streamEntry := stream{ID: args[1]}
@@ -260,7 +246,6 @@ func setCommand(args []string, conn net.Conn, config Config) error {
 
 func getCommand(args []string, conn net.Conn, config Config) error {
 	// TODO: update all the callbacks that use args to call this helper
-	fmt.Println(args)
 	config.Mux.RLock()
 	val, exists := config.Storage[args[4]]
 	config.Mux.RUnlock()
