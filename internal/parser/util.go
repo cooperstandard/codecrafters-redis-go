@@ -20,6 +20,14 @@ func WriteSimpleString(conn net.Conn, val string) {
 	fmt.Fprintf(conn, "+%s\r\n", val)
 }
 
+func GetBulkString(val string) string {
+
+	if len(val) == 0 {
+		return fmt.Sprintf("$-1\r\n")
+	}
+	return fmt.Sprintf("$%d\r\n%s\r\n", len(val), val)
+}
+
 func WriteBulkString(conn net.Conn, val string) {
 	if len(val) == 0 {
 		fmt.Fprintf(conn, "$-1\r\n")
@@ -42,6 +50,28 @@ func CreateStringArray(list []string) string {
 		str += fmt.Sprintf("$%d\r\n%s\r\n", len(v), v)
 	}
 	return str
+}
+
+func WriteStreamSlice(conn net.Conn, s []stream) {
+	streamString := fmt.Sprintf("*%d\r\n", len(s))
+	for _, v := range s {
+		streamString += CreateArrayFromStream(v)
+	}
+
+	fmt.Fprint(conn, streamString)
+}
+
+func CreateArrayFromStream(s stream) string {
+	ret := fmt.Sprintf("*2\r\n%s",GetBulkString(s.ID))
+	vals := []string{}
+	for k,v := range s.data {
+		vals = append(vals, k)
+		vals = append(vals, v)
+	}
+
+	ret += CreateStringArray(vals)
+
+	return ret
 }
 
 func WriteEmptyArray(conn net.Conn) {
