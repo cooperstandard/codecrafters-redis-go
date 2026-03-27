@@ -82,13 +82,24 @@ func CreateStringArray(list []string) string {
 	return str
 }
 
-func WriteStreamSlice(conn net.Conn, s []stream) {
+func GetStreamString (s []stream) string {
+
 	streamString := fmt.Sprintf("*%d\r\n", len(s))
 	for _, v := range s {
 		streamString += CreateArrayFromStream(v)
 	}
 
-	fmt.Fprint(conn, streamString)
+	return streamString
+}
+
+func WriteStreamSlice(conn net.Conn, s []stream) {
+	fmt.Fprint(conn, GetStreamString(s))
+}
+
+func WriteStreamSliceWithName(conn net.Conn, s []stream, name string) {
+	resp := GetBulkString(name)
+	resp += GetStreamString(s)
+	fmt.Fprintf(conn, resp)
 }
 
 func CreateArrayFromStream(s stream) string {

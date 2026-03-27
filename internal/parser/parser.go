@@ -172,7 +172,7 @@ func xreadCommand(args []string, conn net.Conn, config Config) error {
 		}
 	}
 
-	WriteStreamSlice(conn, matched)
+	WriteStreamSliceWithName(conn, matched, args[1])
 	return nil
 }
 
