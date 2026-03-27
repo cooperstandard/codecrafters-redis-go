@@ -63,6 +63,10 @@ var Commands = map[string]Command{
 		Command: "xadd",
 		Callback: xaddCommand,
 	},
+	"xrange": {
+		Command: "xrange",
+		Callback: xrangeCommand,
+	},
 }
 
 func ParseString(cmd []byte) (Command, []string) {

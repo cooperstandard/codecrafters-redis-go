@@ -21,11 +21,33 @@ func WriteSimpleString(conn net.Conn, val string) {
 }
 
 func GetBulkString(val string) string {
-
 	if len(val) == 0 {
-		return fmt.Sprintf("$-1\r\n")
+		return "$-1\r\n"
 	}
 	return fmt.Sprintf("$%d\r\n%s\r\n", len(val), val)
+}
+
+// StreamIDCompare takes in 2 ids and returns 0 if they are equal, -1 if id1 < id2, or 1 if id1 > id2
+func StreamIDCompare(id1, id2 string) int {
+	timestamp1, _ := strconv.Atoi(strings.Split(id1, "-")[0])
+	timestamp2, _ := strconv.Atoi(strings.Split(id2, "-")[0])
+
+	if timestamp1 < timestamp2 {
+		return -1
+	} else if timestamp1 > timestamp2 {
+		return 1
+	}
+
+	seq1, _ := strconv.Atoi(strings.Split(id1, "-")[1])
+	seq2, _ := strconv.Atoi(strings.Split(id2, "-")[1])
+
+	if seq1 < seq2 {
+		return -1
+	} else if seq1 > seq2 {
+		return 1
+	}
+
+	return 0
 }
 
 func WriteBulkString(conn net.Conn, val string) {
@@ -62,9 +84,9 @@ func WriteStreamSlice(conn net.Conn, s []stream) {
 }
 
 func CreateArrayFromStream(s stream) string {
-	ret := fmt.Sprintf("*2\r\n%s",GetBulkString(s.ID))
+	ret := fmt.Sprintf("*2\r\n%s", GetBulkString(s.ID))
 	vals := []string{}
-	for k,v := range s.data {
+	for k, v := range s.data {
 		vals = append(vals, k)
 		vals = append(vals, v)
 	}
@@ -110,7 +132,6 @@ func validateAndGenerateID(conn net.Conn, config Config, id string, streamName s
 		return id, true
 	}
 	if s, exists := config.Streams[streamName]; exists {
-
 		if strings.Split(s[len(s)-1].ID, "-")[0] == parts[0] {
 			ordinal, _ := strconv.Atoi(strings.Split(s[len(s)-1].ID, "-")[1])
 			ordinal += 1

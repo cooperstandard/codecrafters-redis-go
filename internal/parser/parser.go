@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"net"
 	"slices"
 	"strconv"
@@ -120,6 +121,33 @@ func lpopCommand(args []string, conn net.Conn, config Config) error {
 		config.Mux.Unlock()
 	}
 
+	return nil
+}
+
+func xrangeCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+
+	fmt.Println(args)
+
+	config.Mux.RLock()
+	defer config.Mux.RUnlock()
+
+	start := args[1]
+	end := args[2]
+
+	matched := []stream{}
+
+	s := config.Streams[args[0]]
+
+	for _, v := range s {
+		inRange := StreamIDCompare(start, v.ID) != 1
+		inRange = inRange && StreamIDCompare(end, v.ID) != -1
+		if inRange {
+			matched = append(matched, v)
+		}
+	}
+
+	WriteStreamSlice(conn, matched)
 	return nil
 }
 
