@@ -151,6 +151,31 @@ func xrangeCommand(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
+func xreadCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+
+	fmt.Println(args)
+
+	config.Mux.RLock()
+	defer config.Mux.RUnlock()
+
+	start := args[1]
+
+	matched := []stream{}
+
+	s := config.Streams[args[0]]
+
+	for _, v := range s {
+		inRange := StreamIDCompare(start, v.ID) != 1
+		if inRange {
+			matched = append(matched, v)
+		}
+	}
+
+	WriteStreamSlice(conn, matched)
+	return nil
+}
+
 func xaddCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
 
