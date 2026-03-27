@@ -97,7 +97,9 @@ func WriteStreamSlice(conn net.Conn, s []stream) {
 }
 
 func WriteStreamSliceWithName(conn net.Conn, s []stream, name string) {
-	resp := GetBulkString(name)
+	resp := "*1\r\n*2\r\n"
+
+	resp += GetBulkString(name)
 	resp += GetStreamString(s)
 	fmt.Fprintf(conn, resp)
 }
