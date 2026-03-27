@@ -159,11 +159,11 @@ func xreadCommand(args []string, conn net.Conn, config Config) error {
 	config.Mux.RLock()
 	defer config.Mux.RUnlock()
 
-	start := args[1]
+	start := args[2]
 
 	matched := []stream{}
 
-	s := config.Streams[args[0]]
+	s := config.Streams[args[1]]
 
 	for _, v := range s {
 		inRange := StreamIDCompare(start, v.ID) != 1
