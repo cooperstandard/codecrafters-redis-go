@@ -155,24 +155,34 @@ func xreadCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
 
 	fmt.Println(args)
+	streamKeys := args[1 : (len(args))/2+1]
+
+	streamIDs := args[(len(args))/2+1:]
+	fmt.Printf("streamIDs: %v\n", streamIDs)
 
 	config.Mux.RLock()
 	defer config.Mux.RUnlock()
 
-	start := args[2]
+	allMatched := [][]stream{}
 
-	matched := []stream{}
+	for i, key := range streamKeys {
+		start := streamIDs[i]
 
-	s := config.Streams[args[1]]
+		matched := []stream{}
 
-	for _, v := range s {
-		inRange := StreamIDCompare(start, v.ID) != 1
-		if inRange {
-			matched = append(matched, v)
+		s := config.Streams[key]
+
+		for _, v := range s {
+			inRange := StreamIDCompare(start, v.ID) != 1
+			if inRange {
+				matched = append(matched, v)
+			}
 		}
+
+		allMatched = append(allMatched, matched)
 	}
 
-	WriteStreamSliceWithName(conn, matched, args[1])
+	WriteStreamSliceWithName(conn, allMatched, streamKeys)
 	return nil
 }
 

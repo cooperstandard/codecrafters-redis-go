@@ -96,11 +96,15 @@ func WriteStreamSlice(conn net.Conn, s []stream) {
 	fmt.Fprint(conn, GetStreamString(s))
 }
 
-func WriteStreamSliceWithName(conn net.Conn, s []stream, name string) {
-	resp := "*1\r\n*2\r\n"
+func WriteStreamSliceWithName(conn net.Conn, s [][]stream, names []string) {
+	resp := fmt.Sprintf("*%d\r\n", len(names))
 
-	resp += GetBulkString(name)
-	resp += GetStreamString(s)
+
+	for i, name := range names {
+		resp += "*2\r\n"
+		resp += GetBulkString(name)
+		resp += GetStreamString(s[i])
+	}
 	fmt.Fprintf(conn, resp)
 }
 
