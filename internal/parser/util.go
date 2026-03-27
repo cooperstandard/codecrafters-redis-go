@@ -29,6 +29,14 @@ func GetBulkString(val string) string {
 
 // StreamIDCompare takes in 2 ids and returns 0 if they are equal, -1 if id1 < id2, or 1 if id1 > id2
 func StreamIDCompare(id1, id2 string) int {
+	if id1 == "+" || id2 == "-" {
+		return 1
+	}
+
+	if id2 == "+" || id1 == "-" {
+		return -1
+	}
+
 	timestamp1, _ := strconv.Atoi(strings.Split(id1, "-")[0])
 	timestamp2, _ := strconv.Atoi(strings.Split(id2, "-")[0])
 
