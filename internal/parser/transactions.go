@@ -14,3 +14,9 @@ func multiCommand(args []string, conn net.Conn, config Config) error {
 
 	return nil
 }
+
+func execCommand(args []string, conn net.Conn, config Config) error {
+
+	WriteSimpleError(conn, "EXEC without MULTI")
+	return nil
+}
