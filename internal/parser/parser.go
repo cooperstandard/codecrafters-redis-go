@@ -151,13 +151,81 @@ func xrangeCommand(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
+func xreadBlocking(args []string, conn net.Conn, config Config) error {
+	tryRead := func() bool {
+		config.Mux.RLock()
+		defer config.Mux.RUnlock()
+
+		streamKeys := args[3 : (len(args))/2+2]
+
+		streamIDs := args[(len(args))/2+2:]
+		allMatched := [][]stream{}
+
+		for i, key := range streamKeys {
+			start := streamIDs[i]
+
+			matched := []stream{}
+
+			s := config.Streams[key]
+
+			for _, v := range s {
+				inRange := StreamIDCompare(start, v.ID) == -1
+				if inRange {
+					matched = append(matched, v)
+				}
+			}
+
+			if len(matched) > 0 {
+				allMatched = append(allMatched, matched)
+			}
+		}
+
+		if len(allMatched) > 0 {
+			WriteStreamSliceWithName(conn, allMatched, streamKeys)
+			return true
+		}
+
+		return false
+	}
+
+	if tryRead() {
+		return nil
+	}
+
+	if args[1] == "0" {
+		for {
+			time.Sleep(time.Millisecond * 10)
+			if tryRead() {
+				return nil
+			}
+		}
+	}
+
+	timeoutSeconds, _ := strconv.ParseFloat(args[1], 64)
+
+	deadline := time.Now().Add(time.Duration(time.Duration(timeoutSeconds) * time.Millisecond))
+	for time.Now().Before(deadline) {
+		time.Sleep(50 * time.Millisecond)
+		if tryRead() {
+			return nil
+		}
+	}
+
+	WriteEmptyArray(conn)
+	return nil
+}
+
 func xreadCommand(args []string, conn net.Conn, config Config) error {
 	args = GetArgs(args)
+	if args[0] == "block" {
+		xreadBlocking(args, conn, config)
+		return nil
+	}
 
-	fmt.Println(args)
-	streamKeys := args[1 : (len(args))/2+1]
+	args = args[1:]
+	streamKeys := args[:(len(args))/2]
 
-	streamIDs := args[(len(args))/2+1:]
+	streamIDs := args[(len(args))/2:]
 	fmt.Printf("streamIDs: %v\n", streamIDs)
 
 	config.Mux.RLock()
