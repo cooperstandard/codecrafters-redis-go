@@ -152,6 +152,31 @@ func xrangeCommand(args []string, conn net.Conn, config Config) error {
 }
 
 func xreadBlocking(args []string, conn net.Conn, config Config) error {
+	// replace all the dollars with real ids
+	func() {
+		streamKeys := args[3 : (len(args))/2+2]
+
+		streamIDs := args[(len(args))/2+2:]
+
+		for i, id := range streamIDs {
+			if id == "$" {
+				realIndex := (len(args))/2 + 2 + i
+				s := config.Streams[streamKeys[i]]
+				if len(s) == 0 {
+					args[realIndex] = "0-0"
+					continue
+				}
+				maxSeen := "0-0"
+				for _, v := range s {
+					if StreamIDCompare(v.ID, maxSeen) == 1 {
+						maxSeen = v.ID
+					}
+				}
+				args[realIndex] = maxSeen
+			}
+		}
+	}()
+
 	tryRead := func() bool {
 		config.Mux.RLock()
 		defer config.Mux.RUnlock()
