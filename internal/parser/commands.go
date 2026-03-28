@@ -75,6 +75,10 @@ var Commands = map[string]Command{
 		Command: "incr",
 		Callback: incrCommand,
 	},
+	"multi": {
+		Command: "multi",
+		Callback: multiCommand,
+	},
 }
 
 func ParseString(cmd []byte) (Command, []string) {
