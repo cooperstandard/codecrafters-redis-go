@@ -416,6 +416,7 @@ func incrCommand(args []string, conn net.Conn, config Config) error {
 	v, err := strconv.Atoi(config.Storage[args[0]].Value)
 	if err != nil {
 		// not an int
+		WriteSimpleError(conn, "value is not an integer or out of range")
 		return nil
 	}
 
