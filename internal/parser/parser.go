@@ -399,6 +399,26 @@ func setCommand(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
+func incrCommand(args []string, conn net.Conn, config Config) error {
+	args = GetArgs(args)
+	fmt.Println(args)
+
+	config.Mux.Lock()
+	defer config.Mux.Unlock()
+
+	v, err := strconv.Atoi(config.Storage[args[0]].Value)
+	if err != nil {
+		// not an int
+		return nil
+	}
+
+	config.Storage[args[0]] = object{Value: fmt.Sprintf("%d", v+1), ExpiresAt: config.Storage[args[0]].ExpiresAt}
+
+	WriteInteger(conn, v+1)
+
+	return nil
+}
+
 func getCommand(args []string, conn net.Conn, config Config) error {
 	// TODO: update all the callbacks that use args to call this helper
 	config.Mux.RLock()

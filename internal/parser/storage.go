@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-type Object interface {
-	Type() string
-	Expires() time.Time
-}
-
 type object struct {
 	ExpiresAt time.Time
 	Value     string
