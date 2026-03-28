@@ -406,6 +406,13 @@ func incrCommand(args []string, conn net.Conn, config Config) error {
 	config.Mux.Lock()
 	defer config.Mux.Unlock()
 
+	if config.Storage[args[0]].Value == "" {
+		config.Storage[args[0]] = object{Value: "1", ExpiresAt: time.Time{} }
+		
+		WriteInteger(conn, 1)
+
+	}
+
 	v, err := strconv.Atoi(config.Storage[args[0]].Value)
 	if err != nil {
 		// not an int
