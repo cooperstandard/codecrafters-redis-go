@@ -50,6 +50,7 @@ func handleConnection(conn net.Conn, config parser.Config) {
 		}
 		cmd := buffer[:n]
 		command, args := parser.ParseString(cmd)
-		command.Callback(args, conn, config)
+		output := command.Callback(args, conn, config)
+		conn.Write(output)
 	}
 }

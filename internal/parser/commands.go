@@ -7,7 +7,7 @@ import (
 
 type Command struct {
 	Command  string
-	Callback func([]string, net.Conn, Config) error
+	Callback func([]string, net.Conn, Config) []byte
 }
 
 var Commands = map[string]Command{

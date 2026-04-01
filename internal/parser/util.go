@@ -20,6 +20,10 @@ func WriteSimpleString(conn net.Conn, val string) {
 	fmt.Fprintf(conn, "+%s\r\n", val)
 }
 
+func GetSimpleString(val string) []byte {
+	return []byte(fmt.Sprintf("+%s\r\n", val))
+}
+
 func GetBulkString(val string) string {
 	if len(val) == 0 {
 		return "$-1\r\n"
@@ -66,12 +70,27 @@ func WriteBulkString(conn net.Conn, val string) {
 	fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(val), val)
 }
 
+func BulkString(val string) []byte {
+	if len(val) == 0 {
+		return []byte(fmt.Sprintf("$-1\r\n"))
+	}
+	return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(val), val))
+}
+
 func WriteInteger(conn net.Conn, val int) {
 	fmt.Fprintf(conn, ":%d\r\n", val)
 }
 
+func GetInteger(val int) []byte {
+	return []byte(fmt.Sprintf(":%d\r\n", val))
+}
+
 func WriteStringArray(conn net.Conn, list []string) {
 	fmt.Fprintf(conn, CreateStringArray(list))
+}
+
+func GetStringArray(list []string) []byte {
+	return []byte(CreateStringArray(list))
 }
 
 func CreateStringArray(list []string) string {

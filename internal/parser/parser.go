@@ -17,16 +17,17 @@ func GetArgs(raw []string) []string {
 	return ret
 }
 
-func nullCommand(_args []string, _conn net.Conn, _config Config) error {
+func nullCommand(_args []string, _conn net.Conn, _config Config) []byte {
 	return nil
 }
 
-func echoCommand(args []string, conn net.Conn, _config Config) error {
-	WriteBulkString(conn, args[4])
-	return nil
+func echoCommand(args []string, conn net.Conn, _config Config) []byte {
+	return BulkString(args[4])
 }
 
-func typeCommand(args []string, conn net.Conn, config Config) error {
+func typeCommand(args []string, conn net.Conn, config Config) []byte {
+	//TODO: return the slice
+	// add the new types here
 	args = GetArgs(args)
 	if _, ok := config.Storage[args[0]]; ok {
 		WriteSimpleString(conn, "string")
@@ -45,7 +46,8 @@ func typeCommand(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
-func blpopCommand(args []string, conn net.Conn, config Config) error {
+func blpopCommand(args []string, conn net.Conn, config Config) []byte {
+	//return the slice
 	args = GetArgs(args)
 
 	if len(args) < 2 {
@@ -93,7 +95,8 @@ func blpopCommand(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
-func lpopCommand(args []string, conn net.Conn, config Config) error {
+func lpopCommand(args []string, conn net.Conn, config Config) []byte {
+	//TODO: return the slice
 	args = GetArgs(args)
 
 	if len(args) == 1 {
@@ -124,7 +127,8 @@ func lpopCommand(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
-func xrangeCommand(args []string, conn net.Conn, config Config) error {
+func xrangeCommand(args []string, conn net.Conn, config Config) []byte {
+	//TODO: return the slice
 	args = GetArgs(args)
 
 	fmt.Println(args)
@@ -151,7 +155,10 @@ func xrangeCommand(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
-func xreadBlocking(args []string, conn net.Conn, config Config) error {
+func xreadBlocking(args []string, conn net.Conn, config Config) []byte {
+	//TODO: return the slice
+
+
 	// replace all the dollars with real ids
 	func() {
 		streamKeys := args[3 : (len(args))/2+2]
@@ -240,7 +247,8 @@ func xreadBlocking(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
-func xreadCommand(args []string, conn net.Conn, config Config) error {
+func xreadCommand(args []string, conn net.Conn, config Config) []byte {
+	//TODO: return the slice
 	args = GetArgs(args)
 	if args[0] == "block" {
 		xreadBlocking(args, conn, config)
@@ -279,7 +287,7 @@ func xreadCommand(args []string, conn net.Conn, config Config) error {
 	return nil
 }
 
-func xaddCommand(args []string, conn net.Conn, config Config) error {
+func xaddCommand(args []string, conn net.Conn, config Config) []byte {
 	args = GetArgs(args)
 
 	var ok bool
@@ -297,32 +305,28 @@ func xaddCommand(args []string, conn net.Conn, config Config) error {
 	config.Streams[args[0]] = append(config.Streams[args[0]], streamEntry)
 	config.Mux.Unlock()
 
-	WriteBulkString(conn, args[1])
-
-	return nil
+	return BulkString(args[1])
 }
 
-func llenCommand(args []string, conn net.Conn, config Config) error {
+func llenCommand(args []string, conn net.Conn, config Config) []byte {
 	args = GetArgs(args)
 
 	config.Mux.RLock()
-	WriteInteger(conn, len(config.Lists[args[0]]))
-	config.Mux.RUnlock()
-
-	return nil
+	defer config.Mux.RUnlock()
+	return GetInteger(len(config.Lists[args[0]]))
 }
 
-func lrangeCommand(args []string, conn net.Conn, config Config) error {
+func lrangeCommand(args []string, conn net.Conn, config Config) []byte {
 	args = GetArgs(args)
 	start, err := strconv.Atoi(args[1])
 	if err != nil {
-		WriteStringArray(conn, []string{})
-		return err
+		return GetStringArray([]string{})
 	}
 
 	end, _ := strconv.Atoi(args[2])
 
 	config.Mux.RLock()
+	defer config.Mux.RUnlock()
 	list := config.Lists[args[0]]
 
 	if start < 0 {
@@ -338,42 +342,33 @@ func lrangeCommand(args []string, conn net.Conn, config Config) error {
 	}
 
 	if start > end {
-		WriteStringArray(conn, []string{})
-		config.Mux.RUnlock()
-		return nil
+		return GetStringArray([]string{})
 	}
 
-	WriteStringArray(conn, list[start:end+1])
-	config.Mux.RUnlock()
-	return nil
+	return GetStringArray(list[start:end+1])
 }
 
-func lpushCommand(args []string, conn net.Conn, config Config) error {
+func lpushCommand(args []string, conn net.Conn, config Config) []byte {
 	args = GetArgs(args)
 
 	config.Mux.Lock()
+	defer config.Mux.Unlock()
+
 	elems := args[1:]
 	slices.Reverse(elems)
 	config.Lists[args[0]] = append(elems, config.Lists[args[0]]...)
-	WriteInteger(conn, len(config.Lists[args[0]]))
-	config.Mux.Unlock()
-
-	return nil
+	return GetInteger(len(config.Lists[args[0]]))
 }
 
-func rpushCommand(args []string, conn net.Conn, config Config) error {
+func rpushCommand(args []string, conn net.Conn, config Config) []byte {
 	args = GetArgs(args)
 
 	config.Mux.Lock()
+	defer config.Mux.Unlock()
 	config.Lists[args[0]] = append(config.Lists[args[0]], args[1:]...)
-	WriteInteger(conn, len(config.Lists[args[0]]))
-	config.Mux.Unlock()
-
-	return nil
+	return GetInteger(len(config.Lists[args[0]]))
 }
 
-func PingCommand(_args []string, conn net.Conn, _config Config) error {
-	WriteSimpleString(conn, "PONG")
-	return nil
+func PingCommand(_args []string, conn net.Conn, _config Config) []byte {
+	return GetSimpleString("PONG")
 }
-

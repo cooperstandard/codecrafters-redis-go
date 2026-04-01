@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-func setCommand(args []string, conn net.Conn, config Config) error {
+func setCommand(args []string, conn net.Conn, config Config) []byte {
 	expiresAt := time.Time{}
 	if len(args) >= 10 {
 		dur, err := strconv.Atoi(args[10])
 		if err != nil {
-			return err
+			return nil
 		}
 		if args[8] == "EX" {
 			expiresAt = time.Now().Add(time.Second * time.Duration(dur))
@@ -25,11 +25,10 @@ func setCommand(args []string, conn net.Conn, config Config) error {
 	config.Storage[args[4]] = object{Value: args[6], ExpiresAt: expiresAt}
 	config.Mux.Unlock()
 
-	WriteSimpleString(conn, "OK")
-	return nil
+	return GetSimpleString("OK")
 }
 
-func incrCommand(args []string, conn net.Conn, config Config) error {
+func incrCommand(args []string, conn net.Conn, config Config) []byte {
 	args = GetArgs(args)
 	fmt.Println(args)
 
@@ -39,8 +38,7 @@ func incrCommand(args []string, conn net.Conn, config Config) error {
 	if config.Storage[args[0]].Value == "" {
 		config.Storage[args[0]] = object{Value: "1", ExpiresAt: time.Time{}}
 
-		WriteInteger(conn, 1)
-		return nil
+		return GetInteger(1)
 	}
 
 	v, err := strconv.Atoi(config.Storage[args[0]].Value)
@@ -52,13 +50,10 @@ func incrCommand(args []string, conn net.Conn, config Config) error {
 
 	config.Storage[args[0]] = object{Value: fmt.Sprintf("%d", v+1), ExpiresAt: config.Storage[args[0]].ExpiresAt}
 
-	WriteInteger(conn, v+1)
-
-	return nil
+	return GetInteger(v+1)
 }
 
-func getCommand(args []string, conn net.Conn, config Config) error {
-	// TODO: update all the callbacks that use args to call this helper
+func getCommand(args []string, conn net.Conn, config Config) []byte {
 	config.Mux.RLock()
 	val, exists := config.Storage[args[4]]
 	config.Mux.RUnlock()
@@ -72,10 +67,8 @@ func getCommand(args []string, conn net.Conn, config Config) error {
 	}
 
 	if !exists {
-		WriteBulkString(conn, "")
-		return nil
+		return BulkString("")
 	}
 
-	WriteBulkString(conn, val.Value)
-	return nil
+	return BulkString(val.Value)
 }
