@@ -7,13 +7,12 @@ import (
 
 func multiCommand(args []string, conn net.Conn, config Config) []byte {
 	args = GetArgs(args)
-	fmt.Println(args)
 	config.Queues[conn] = make([]QueuedCommand, 0)
 	return GetSimpleString("OK")
 }
 
 func execCommand(args []string, conn net.Conn, config Config) []byte {
-	// TODO: return the byte slice
+	fmt.Println("here")
 	if _, exists := config.Queues[conn]; !exists {
 		return GetSimpleError(conn, "EXEC without MULTI")
 	}

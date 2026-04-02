@@ -21,7 +21,7 @@ func WriteSimpleString(conn net.Conn, val string) {
 }
 
 func GetSimpleString(val string) []byte {
-	return []byte(fmt.Sprintf("+%s\r\n", val))
+	return fmt.Appendf(nil, "+%s\r\n", val)
 }
 
 func GetBulkString(val string) string {
@@ -72,9 +72,9 @@ func WriteBulkString(conn net.Conn, val string) {
 
 func BulkString(val string) []byte {
 	if len(val) == 0 {
-		return []byte(fmt.Sprintf("$-1\r\n"))
+		return fmt.Appendf(nil, "$-1\r\n")
 	}
-	return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(val), val))
+	return fmt.Appendf(nil, "$%d\r\n%s\r\n", len(val), val)
 }
 
 func WriteInteger(conn net.Conn, val int) {
@@ -82,7 +82,7 @@ func WriteInteger(conn net.Conn, val int) {
 }
 
 func GetInteger(val int) []byte {
-	return []byte(fmt.Sprintf(":%d\r\n", val))
+	return fmt.Appendf(nil, ":%d\r\n", val)
 }
 
 func WriteStringArray(conn net.Conn, list []string) {
@@ -101,8 +101,7 @@ func CreateStringArray(list []string) string {
 	return str
 }
 
-func GetStreamString (s []stream) string {
-
+func GetStreamString(s []stream) string {
 	streamString := fmt.Sprintf("*%d\r\n", len(s))
 	for _, v := range s {
 		streamString += CreateArrayFromStream(v)
@@ -117,7 +116,6 @@ func WriteStreamSlice(conn net.Conn, s []stream) {
 
 func WriteStreamSliceWithName(conn net.Conn, s [][]stream, names []string) {
 	resp := fmt.Sprintf("*%d\r\n", len(names))
-
 
 	for i, name := range names {
 		resp += "*2\r\n"
@@ -149,7 +147,7 @@ func WriteSimpleError(conn net.Conn, msg string) {
 }
 
 func GetSimpleError(conn net.Conn, msg string) []byte {
-	return []byte(fmt.Sprintf("-ERR %s\r\n", msg))
+	return fmt.Appendf(nil, "-ERR %s\r\n", msg)
 }
 
 func validateAndGenerateID(conn net.Conn, config Config, id string, streamName string) (string, bool) {
