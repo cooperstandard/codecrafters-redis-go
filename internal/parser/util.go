@@ -148,6 +148,10 @@ func WriteSimpleError(conn net.Conn, msg string) {
 	fmt.Fprintf(conn, "-ERR %s\r\n", msg)
 }
 
+func GetSimpleError(conn net.Conn, msg string) []byte {
+	return []byte(fmt.Sprintf("-ERR %s\r\n", msg))
+}
+
 func validateAndGenerateID(conn net.Conn, config Config, id string, streamName string) (string, bool) {
 	config.Mux.RLock()
 	defer config.Mux.RUnlock()

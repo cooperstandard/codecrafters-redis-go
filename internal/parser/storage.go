@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"net"
 	"sync"
 	"time"
 )
@@ -20,6 +21,7 @@ type Config struct {
 	Storage map[string]object
 	Lists   map[string][]string
 	Streams map[string][]stream
+	Queues  map[net.Conn][]Command
 }
 
 func InitConfig() Config {
@@ -28,5 +30,6 @@ func InitConfig() Config {
 	config.Storage = make(map[string]object)
 	config.Lists = make(map[string][]string)
 	config.Streams = make(map[string][]stream)
+	config.Queues = make(map[net.Conn][]Command)
 	return config
 }
