@@ -2,6 +2,7 @@ package parser
 
 import (
 	"net"
+	"slices"
 	"strings"
 )
 
@@ -56,33 +57,42 @@ var Commands = map[string]Command{
 		Callback: blpopCommand,
 	},
 	"type": {
-		Command: "type",
+		Command:  "type",
 		Callback: typeCommand,
 	},
 	"xadd": {
-		Command: "xadd",
+		Command:  "xadd",
 		Callback: xaddCommand,
 	},
 	"xrange": {
-		Command: "xrange",
+		Command:  "xrange",
 		Callback: xrangeCommand,
 	},
 	"xread": {
-		Command: "xread",
+		Command:  "xread",
 		Callback: xreadCommand,
 	},
 	"incr": {
-		Command: "incr",
+		Command:  "incr",
 		Callback: incrCommand,
 	},
 	"multi": {
-		Command: "multi",
+		Command:  "multi",
 		Callback: multiCommand,
 	},
 	"exec": {
-		Command: "exec",
+		Command:  "exec",
 		Callback: execCommand,
 	},
+	"discard": {
+		Command: "discard",
+		Callback: discardCommand,
+	},
+}
+
+func DoesCommandEndTransaction(command Command) bool {
+	endsTransaction := []string{"exec", "discard"}
+	return slices.Contains(endsTransaction, command.Command)
 }
 
 func ParseString(cmd []byte) (Command, []string) {
@@ -90,4 +100,3 @@ func ParseString(cmd []byte) (Command, []string) {
 
 	return Commands[strings.ToLower(str[2])], str
 }
-

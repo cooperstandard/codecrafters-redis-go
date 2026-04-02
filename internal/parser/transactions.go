@@ -6,7 +6,6 @@ import (
 )
 
 func multiCommand(args []string, conn net.Conn, config Config) []byte {
-	args = GetArgs(args)
 	config.Queues[conn] = make([]QueuedCommand, 0)
 	return GetSimpleString("OK")
 }
@@ -14,7 +13,7 @@ func multiCommand(args []string, conn net.Conn, config Config) []byte {
 func execCommand(args []string, conn net.Conn, config Config) []byte {
 	fmt.Println("here")
 	if _, exists := config.Queues[conn]; !exists {
-		return GetSimpleError(conn, "EXEC without MULTI")
+		return GetSimpleError("EXEC without MULTI")
 	}
 
 	if len(config.Queues[conn]) == 0 {
@@ -27,6 +26,15 @@ func execCommand(args []string, conn net.Conn, config Config) []byte {
 	}
 
 	return prefixAndFlattenArray(outputs)
+}
+
+func discardCommand(args []string, conn net.Conn, config Config) []byte {
+	if _, exists := config.Queues[conn]; !exists {
+		return GetSimpleError("DISCARD without MULTI")
+	}
+
+	delete(config.Queues, conn)
+	return GetSimpleString("OK")
 }
 
 func prefixAndFlattenArray(content [][]byte) []byte {

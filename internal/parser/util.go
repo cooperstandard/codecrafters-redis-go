@@ -146,7 +146,7 @@ func WriteSimpleError(conn net.Conn, msg string) {
 	fmt.Fprintf(conn, "-ERR %s\r\n", msg)
 }
 
-func GetSimpleError(conn net.Conn, msg string) []byte {
+func GetSimpleError(msg string) []byte {
 	return fmt.Appendf(nil, "-ERR %s\r\n", msg)
 }
 
