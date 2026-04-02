@@ -8,7 +8,7 @@ import (
 func multiCommand(args []string, conn net.Conn, config Config) []byte {
 	args = GetArgs(args)
 	fmt.Println(args)
-	config.Queues[conn] = make([]Command, 0)
+	config.Queues[conn] = make([]QueuedCommand, 0)
 	return GetSimpleString("OK")
 }
 
@@ -22,6 +22,18 @@ func execCommand(args []string, conn net.Conn, config Config) []byte {
 		delete(config.Queues, conn)
 		return GetStringArray([]string{})
 	}
+	outputs := [][]byte{}
+	for _, v := range config.Queues[conn] {
+		outputs = append(outputs, v.Callback(v.Args, conn, config))
+	}
 
-	return GetSimpleString("OK")
+	return prefixAndFlattenArray(outputs)
+}
+
+func prefixAndFlattenArray(content [][]byte) []byte {
+	ret := fmt.Appendf(nil, "*%d\r\n", len(content))
+	for _, v := range content {
+		ret = append(ret, v...)
+	}
+	return ret
 }

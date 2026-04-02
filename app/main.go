@@ -50,7 +50,13 @@ func handleConnection(conn net.Conn, config parser.Config) {
 		}
 		cmd := buffer[:n]
 		command, args := parser.ParseString(cmd)
-		output := command.Callback(args, conn, config)
-		conn.Write(output)
+		if _, exists := config.Queues[conn]; exists {
+			config.Queues[conn] = append(config.Queues[conn], command)
+			conn.Write(parser.GetSimpleString("QUEUED"))
+			return
+		} else {
+			output := command.Callback(args, conn, config)
+			conn.Write(output)
+		}
 	}
 }
