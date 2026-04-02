@@ -44,13 +44,12 @@ func incrCommand(args []string, conn net.Conn, config Config) []byte {
 	v, err := strconv.Atoi(config.Storage[args[0]].Value)
 	if err != nil {
 		// not an int
-		WriteSimpleError(conn, "value is not an integer or out of range")
-		return nil
+		return GetSimpleError("value is not an integer or out of range")
 	}
 
 	config.Storage[args[0]] = object{Value: fmt.Sprintf("%d", v+1), ExpiresAt: config.Storage[args[0]].ExpiresAt}
 
-	return GetInteger(v+1)
+	return GetInteger(v + 1)
 }
 
 func getCommand(args []string, conn net.Conn, config Config) []byte {
