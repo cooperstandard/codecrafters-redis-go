@@ -88,6 +88,14 @@ var Commands = map[string]Command{
 		Command: "discard",
 		Callback: discardCommand,
 	},
+	"info": {
+		Command: "info",
+		Callback: infoCommand,
+	},
+	"": {
+		Command: "unregistered",
+		Callback: nullCommand,
+	},
 }
 
 func DoesCommandEndTransaction(command Command) bool {
@@ -97,6 +105,9 @@ func DoesCommandEndTransaction(command Command) bool {
 
 func ParseString(cmd []byte) (Command, []string) {
 	str := strings.Split(string(cmd), "\r\n")
-
-	return Commands[strings.ToLower(str[2])], str
+	command, exists := Commands[strings.ToLower(str[2])]
+	if !exists {
+		return Commands[""], str
+	}
+	return command, str
 }

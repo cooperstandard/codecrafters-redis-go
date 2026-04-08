@@ -18,11 +18,16 @@ func GetArgs(raw []string) []string {
 }
 
 func nullCommand(_args []string, _conn net.Conn, _config Config) []byte {
-	return nil
+	return GetSimpleError("unrecognized command")
 }
 
 func echoCommand(args []string, conn net.Conn, _config Config) []byte {
 	return BulkString(args[4])
+}
+
+func infoCommand(args []string, conn net.Conn, _config Config) []byte {
+
+	return BulkString("role:master")
 }
 
 func typeCommand(args []string, conn net.Conn, config Config) []byte {
