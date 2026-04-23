@@ -25,13 +25,16 @@ func echoCommand(args []string, conn net.Conn, _config Config) []byte {
 	return BulkString(args[4])
 }
 
-func infoCommand(args []string, conn net.Conn, _config Config) []byte {
+func infoCommand(args []string, conn net.Conn, config Config) []byte {
+	if config.Source != "" {
+		return BulkString("role:slave")
+	}
 
 	return BulkString("role:master")
 }
 
 func typeCommand(args []string, conn net.Conn, config Config) []byte {
-	//TODO: return the slice
+	// TODO: return the slice
 	// add the new types here
 	args = GetArgs(args)
 	if _, ok := config.Storage[args[0]]; ok {
@@ -52,7 +55,7 @@ func typeCommand(args []string, conn net.Conn, config Config) []byte {
 }
 
 func blpopCommand(args []string, conn net.Conn, config Config) []byte {
-	//return the slice
+	// return the slice
 	args = GetArgs(args)
 
 	if len(args) < 2 {
@@ -101,7 +104,7 @@ func blpopCommand(args []string, conn net.Conn, config Config) []byte {
 }
 
 func lpopCommand(args []string, conn net.Conn, config Config) []byte {
-	//TODO: return the slice
+	// TODO: return the slice
 	args = GetArgs(args)
 
 	if len(args) == 1 {
@@ -133,7 +136,7 @@ func lpopCommand(args []string, conn net.Conn, config Config) []byte {
 }
 
 func xrangeCommand(args []string, conn net.Conn, config Config) []byte {
-	//TODO: return the slice
+	// TODO: return the slice
 	args = GetArgs(args)
 
 	fmt.Println(args)
@@ -161,8 +164,7 @@ func xrangeCommand(args []string, conn net.Conn, config Config) []byte {
 }
 
 func xreadBlocking(args []string, conn net.Conn, config Config) []byte {
-	//TODO: return the slice
-
+	// TODO: return the slice
 
 	// replace all the dollars with real ids
 	func() {
@@ -253,7 +255,7 @@ func xreadBlocking(args []string, conn net.Conn, config Config) []byte {
 }
 
 func xreadCommand(args []string, conn net.Conn, config Config) []byte {
-	//TODO: return the slice
+	// TODO: return the slice
 	args = GetArgs(args)
 	if args[0] == "block" {
 		xreadBlocking(args, conn, config)
@@ -350,7 +352,7 @@ func lrangeCommand(args []string, conn net.Conn, config Config) []byte {
 		return GetStringArray([]string{})
 	}
 
-	return GetStringArray(list[start:end+1])
+	return GetStringArray(list[start : end+1])
 }
 
 func lpushCommand(args []string, conn net.Conn, config Config) []byte {

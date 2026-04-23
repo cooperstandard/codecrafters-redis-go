@@ -12,7 +12,7 @@ type object struct {
 }
 
 type QueuedCommand struct {
-	Args []string
+	Args     []string
 	Callback func([]string, net.Conn, Config) []byte
 }
 
@@ -27,6 +27,7 @@ type Config struct {
 	Lists   map[string][]string
 	Streams map[string][]stream
 	Queues  map[net.Conn][]QueuedCommand
+	Source  string
 }
 
 func InitConfig() Config {
