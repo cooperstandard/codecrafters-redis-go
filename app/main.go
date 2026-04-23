@@ -13,6 +13,7 @@ const BufferSize int = 1024
 
 func main() {
 	fmt.Println("Logs from your program will appear here!")
+	config := parser.InitConfig()
 	port := 6379
 
 	args := make(map[string]string)
@@ -27,7 +28,7 @@ func main() {
 			fmt.Printf("Using port: %d\n", port)
 
 		case "--replicaof":
-			fmt.Printf("Replication flag set to: %s\n", v)
+			config.Source = v
 
 		default:
 			fmt.Printf("Unknown flag: %s\n", k)
@@ -41,8 +42,6 @@ func main() {
 		fmt.Printf("Failed to bind to port %d\n", port)
 		os.Exit(1)
 	}
-
-	config := parser.InitConfig()
 
 	for {
 
