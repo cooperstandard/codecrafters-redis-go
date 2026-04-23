@@ -26,11 +26,26 @@ func echoCommand(args []string, conn net.Conn, _config Config) []byte {
 }
 
 func infoCommand(args []string, conn net.Conn, config Config) []byte {
-	if config.Source != "" {
-		return BulkString("role:slave")
+	respMap := make(map[string]string)
+
+	createResponseFromMap := func(m map[string]string) string {
+		resp := ""
+		for k, v := range m {
+			resp += fmt.Sprintf("%s:%s\n", k, v)
+		}
+
+		return resp
 	}
 
-	return BulkString("role:master")
+	if config.Source != "" {
+		respMap["role"] = "slave"
+	} else {
+		respMap["role"] = "master"
+		respMap["master_repl_offset"] = "0"
+		respMap["master_replid"] = "0000000000000000000000000000000000000000"
+	}
+
+	return BulkString(createResponseFromMap(respMap))
 }
 
 func typeCommand(args []string, conn net.Conn, config Config) []byte {
