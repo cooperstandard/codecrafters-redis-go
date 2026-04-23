@@ -26,7 +26,7 @@ func main() {
 			port, _ = strconv.Atoi(v)
 			fmt.Printf("Using port: %d\n", port)
 
-		case "--replication":
+		case "--replicaof":
 			fmt.Printf("Replication flag set to: %s\n", v)
 
 		default:
