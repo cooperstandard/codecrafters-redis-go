@@ -12,17 +12,30 @@ import (
 const BufferSize int = 1024
 
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 	port := 6379
 
+	args := make(map[string]string)
 	if len(os.Args) > 1 {
-		// TODO: real arg parsing
-		port, _ = strconv.Atoi(os.Args[2])
+		args = parseFlags(os.Args[1:])
 	}
 
-	// Uncomment the code below to pass the first stage
-	//
+	for k, v := range args {
+		switch k {
+		case "--port":
+			port, _ = strconv.Atoi(v)
+			fmt.Printf("Using port: %d\n", port)
+
+		case "--replication":
+			fmt.Printf("Replication flag set to: %s\n", v)
+
+		default:
+			fmt.Printf("Unknown flag: %s\n", k)
+		}
+	}
+
+	port, _ = strconv.Atoi(os.Args[2])
+
 	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
 	if err != nil {
 		fmt.Printf("Failed to bind to port %d\n", port)
@@ -67,7 +80,12 @@ func handleConnection(conn net.Conn, config parser.Config) {
 	}
 }
 
-func parseFlags(flags string) map[string]string {
+func parseFlags(flags []string) map[string]string {
 	// val := prior[:2]
-	return make(map[string]string)
+	// parse the flags slice (which is in the form of [name, value, name, value, etc]) and return a map of flag name to value
+	ret := make(map[string]string)
+	for i := 0; i < len(flags); i += 2 {
+		ret[flags[i]] = flags[i+1]
+	}
+	return ret
 }
