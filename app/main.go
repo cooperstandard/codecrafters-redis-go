@@ -28,7 +28,7 @@ func main() {
 			fmt.Printf("Using port: %d\n", port)
 
 		case "--replicaof":
-			config.Source = v
+			establishReplicaRelationship(&config, v)
 
 		default:
 			fmt.Printf("Unknown flag: %s\n", k)
@@ -51,6 +51,17 @@ func main() {
 
 		go handleConnection(conn, config)
 	}
+}
+
+func establishReplicaRelationship(config *parser.Config, v string) {
+	config.Source = v
+	fmt.Printf("Setting replica of: %s\n", v)
+	conn, err := parser.EstablishReplicaConnection(*config)
+	if err != nil {
+		fmt.Printf("Failed to establish replication connection: %s\n", err.Error())
+		os.Exit(1)
+	}
+	config.ReplicationConn = conn
 }
 
 func handleConnection(conn net.Conn, config parser.Config) {

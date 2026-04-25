@@ -22,12 +22,13 @@ type stream struct {
 }
 
 type Config struct {
-	Mux     *sync.RWMutex
-	Storage map[string]object
-	Lists   map[string][]string
-	Streams map[string][]stream
-	Queues  map[net.Conn][]QueuedCommand
-	Source  string
+	Mux             *sync.RWMutex
+	Storage         map[string]object
+	Lists           map[string][]string
+	Streams         map[string][]stream
+	Queues          map[net.Conn][]QueuedCommand
+	Source          string
+	ReplicationConn net.Conn
 }
 
 func InitConfig() Config {

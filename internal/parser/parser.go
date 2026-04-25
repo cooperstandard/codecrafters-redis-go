@@ -5,6 +5,7 @@ import (
 	"net"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -29,12 +30,12 @@ func infoCommand(args []string, conn net.Conn, config Config) []byte {
 	respMap := make(map[string]string)
 
 	createResponseFromMap := func(m map[string]string) string {
-		resp := ""
+		var resp strings.Builder
 		for k, v := range m {
-			resp += fmt.Sprintf("%s:%s\n", k, v)
+			fmt.Fprintf(&resp, "%s:%s\n", k, v)
 		}
 
-		return resp
+		return resp.String()
 	}
 
 	if config.Source != "" {
