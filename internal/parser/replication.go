@@ -24,7 +24,7 @@ func EstablishReplicaConnection(config Config) (net.Conn, error) {
 	}
 
 	// conn.Write(GetStringArray([]string{"REPLCONF", "listening-port", strings.Split(config.Source, ":")[1]}))
-	conn.Write(GetStringArray([]string{"REPLCONF", "listening-port", "12"}))
+	conn.Write(GetStringArray([]string{"REPLCONF", "listening-port", "6380"}))
 
 	n, _ = conn.Read(buffer)
 
