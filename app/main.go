@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/codecrafters-io/redis-starter-go/internal/parser"
 )
@@ -54,7 +55,8 @@ func main() {
 }
 
 func establishReplicaRelationship(config *parser.Config, v string) {
-	config.Source = v
+	parts := strings.Split(v, " ")
+	config.Source = fmt.Sprintf("%s:%s", parts[0], parts[1])
 	fmt.Printf("Setting replica of: %s\n", v)
 	conn, err := parser.EstablishReplicaConnection(*config)
 	if err != nil {
