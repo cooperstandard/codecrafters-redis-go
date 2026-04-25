@@ -40,6 +40,9 @@ func EstablishReplicaConnection(config Config) (net.Conn, error) {
 		return nil, fmt.Errorf("handshake failed: %w", err)
 	}
 
+	conn.Write(GetStringArray([]string{"PSYNC", "?", "-1"}))
+	conn.Read(buffer)
+
 	return conn, nil
 }
 
