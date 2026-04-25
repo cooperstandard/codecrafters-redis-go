@@ -3,7 +3,6 @@ package parser
 import (
 	"fmt"
 	"net"
-	"strings"
 )
 
 func EstablishReplicaConnection(config Config) (net.Conn, error) {
@@ -24,7 +23,9 @@ func EstablishReplicaConnection(config Config) (net.Conn, error) {
 		return nil, fmt.Errorf("handshake failed: %w", err)
 	}
 
-	conn.Write(GetStringArray([]string{"REPLCONF", "listening-port", strings.Split(config.Source, ":")[1]}))
+	// conn.Write(GetStringArray([]string{"REPLCONF", "listening-port", strings.Split(config.Source, ":")[1]}))
+	conn.Write(GetStringArray([]string{"REPLCONF", "listening-port", "12"}))
+
 	n, _ = conn.Read(buffer)
 
 	if err = handleHandshakeResponses(buffer[:n], "+OK\r\n"); err != nil {
