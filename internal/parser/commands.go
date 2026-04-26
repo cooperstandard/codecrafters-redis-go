@@ -85,16 +85,20 @@ var Commands = map[string]Command{
 		Callback: execCommand,
 	},
 	"discard": {
-		Command: "discard",
+		Command:  "discard",
 		Callback: discardCommand,
 	},
 	"info": {
-		Command: "info",
+		Command:  "info",
 		Callback: infoCommand,
 	},
 	"": {
-		Command: "unregistered",
+		Command:  "unregistered",
 		Callback: nullCommand,
+	},
+	"replconf": {
+		Command:  "replconf",
+		Callback: replconfCommand,
 	},
 }
 

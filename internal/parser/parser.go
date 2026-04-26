@@ -26,6 +26,10 @@ func echoCommand(args []string, conn net.Conn, _config Config) []byte {
 	return BulkString(args[4])
 }
 
+func replconfCommand(args []string, conn net.Conn, config Config) []byte {
+	return GetSimpleString("OK")
+}
+
 func infoCommand(args []string, conn net.Conn, config Config) []byte {
 	respMap := make(map[string]string)
 
